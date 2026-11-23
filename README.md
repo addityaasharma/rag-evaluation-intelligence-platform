@@ -1,5 +1,9 @@
 # RAG Evaluation & Intelligence Platform
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://rag-evaluation-intelligence-platform-mta659aycbsfpwt6wazwyd.streamlit.app/)
+
+**Live demo: https://rag-evaluation-intelligence-platform-mta659aycbsfpwt6wazwyd.streamlit.app/**
+
 A modular retrieval-augmented generation (RAG) platform (Python package `ragkit`) with a built-in evaluation harness.
 
 - **Documents:** PDF, DOCX, TXT and Markdown, via CLI, API or the web app.
