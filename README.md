@@ -1,6 +1,6 @@
-# ragkit
+# RAG Evaluation & Intelligence Platform
 
-A modular retrieval-augmented generation (RAG) toolkit with a built-in evaluation harness.
+A modular retrieval-augmented generation (RAG) platform (Python package `ragkit`) with a built-in evaluation harness.
 
 - **Documents:** PDF, DOCX, TXT and Markdown, via CLI, API or the web app.
 - **Chat:** multi-turn Q&A with hybrid retrieval (dense + BM25), and any LLM provider via LiteLLM.

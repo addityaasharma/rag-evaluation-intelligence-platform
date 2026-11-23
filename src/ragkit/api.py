@@ -44,7 +44,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app(pipeline: RagPipeline | None = None) -> FastAPI:
-    app = FastAPI(title="ragkit", lifespan=None if pipeline else _lifespan)
+    app = FastAPI(
+        title="RAG Evaluation & Intelligence Platform", lifespan=None if pipeline else _lifespan
+    )
     if pipeline:
         app.state.pipeline = pipeline
 
