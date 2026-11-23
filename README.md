@@ -70,17 +70,29 @@ pipeline.ingest(Path("data/sample_docs"))
 print(pipeline.ask("What is the Pro plan rate limit?").text)
 ```
 
-## Deploy to Hugging Face Spaces
+## Deploy
 
-The app runs as a Docker Space (free tier). Each visitor gets a private index with the sample documents loaded; uploads are capped at 5 MB, chat at 30 questions and evaluation at one run per session, because all visitors share one API key.
+### Streamlit Community Cloud (free)
 
 1. Create a free Gemini API key at https://aistudio.google.com/apikey.
-2. On huggingface.co, create a **Docker** Space (blank template, public).
-3. In the Space settings, add a secret `GEMINI_API_KEY`.
-4. In this GitHub repo, add a secret `HF_TOKEN` (a Hugging Face token with write access) and a variable `HF_SPACE` (`your-username/space-name`).
-5. Run the **Deploy to Hugging Face Space** workflow. It also runs on every push to `main`.
+2. At https://share.streamlit.io choose **Create app**, pick this repository, branch `main`, and main file `streamlit_app.py`.
+3. Under **Advanced settings**, select Python 3.12 and paste these secrets:
+   ```toml
+   GEMINI_API_KEY = "your-key"
+   RAG_PUBLIC_DEMO = "1"
+   RAG_CHROMA_PATH = "/tmp/chroma"
+   RAG_HISTORY_PATH = "/tmp/history.db"
+   ```
+4. Deploy. The app redeploys on every push to `main`.
 
-Free Spaces sleep when idle and lose uploaded data on restart. Set `RAG_PUBLIC_DEMO=0` to turn off the demo limits on a private deployment.
+`RAG_PUBLIC_DEMO=1` gives each visitor a private index preloaded with the sample documents, caps uploads at 5 MB, chat at 30 questions and evaluation at one run per session, since all visitors share one API key. Free apps sleep when idle and lose uploaded data on restart.
+
+### Docker
+
+```bash
+docker build -t rag-platform .
+docker run -p 8501:8501 -e GEMINI_API_KEY=your-key rag-platform
+```
 
 ## Configuration
 
