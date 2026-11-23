@@ -20,7 +20,7 @@ from ragkit.evaluation import (
 from ragkit.llm import LiteLLMClient
 from ragkit.pipeline import build_pipeline
 
-app = typer.Typer(help="Retrieval-augmented generation toolkit.", no_args_is_help=True)
+app = typer.Typer(help="RAG Evaluation & Intelligence Platform.", no_args_is_help=True)
 console = Console()
 
 

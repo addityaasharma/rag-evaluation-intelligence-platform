@@ -209,7 +209,7 @@ def _compare(settings: Settings) -> None:
     )
 
 
-st.set_page_config(page_title="ragkit", layout="wide")
+st.set_page_config(page_title="RAG Evaluation & Intelligence Platform", layout="wide")
 st.navigation(
     [
         st.Page(chat_page, title="Chat", url_path="chat", default=True),
