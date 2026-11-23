@@ -21,6 +21,7 @@ class ChromaStore:
         client: Any = None,
     ) -> None:
         self._embedder = embedder
+        self.revision = 0
         self._client: Any = client or chromadb.PersistentClient(path=str(path))
         self._collection: Any = self._client.get_or_create_collection(
             name=collection, metadata={"hnsw:space": "cosine"}
@@ -32,11 +33,9 @@ class ChromaStore:
                 ids=[c.id for c in batch],
                 documents=[c.text for c in batch],
                 embeddings=self._embedder.embed_documents([c.text for c in batch]),
-                metadatas=[
-                    {"document_id": c.document_id, "source": c.source, "index": c.index}
-                    for c in batch
-                ],
+                metadatas=[_to_metadata(c) for c in batch],
             )
+        self.revision += 1
 
     def search(self, query: str, limit: int) -> list[RetrievedChunk]:
         total = self.count()
@@ -69,12 +68,29 @@ class ChromaStore:
     def count(self) -> int:
         return int(self._collection.count())
 
+    def delete_source(self, source: str) -> None:
+        self._collection.delete(where={"source": source})
+        self.revision += 1
+
     def reset(self) -> None:
         name = self._collection.name
         self._client.delete_collection(name)
         self._collection = self._client.get_or_create_collection(
             name=name, metadata={"hnsw:space": "cosine"}
         )
+        self.revision += 1
+
+
+def _to_metadata(chunk: Chunk) -> dict[str, str | int]:
+    # Chroma rejects None values, so a missing page is simply omitted.
+    meta: dict[str, str | int] = {
+        "document_id": chunk.document_id,
+        "source": chunk.source,
+        "index": chunk.index,
+    }
+    if chunk.page is not None:
+        meta["page"] = chunk.page
+    return meta
 
 
 def _to_chunk(id_: str, text: str, meta: Any) -> Chunk:
@@ -84,4 +100,5 @@ def _to_chunk(id_: str, text: str, meta: Any) -> Chunk:
         source=str(meta["source"]),
         index=int(meta["index"]),
         text=text,
+        page=int(meta["page"]) if "page" in meta else None,
     )

@@ -1,8 +1,5 @@
-import json
-import re
-
 from ragkit.generation import format_context
-from ragkit.llm import LLM
+from ragkit.llm import LLM, extract_json_object
 from ragkit.models import RetrievedChunk
 
 JUDGE_SYSTEM = """\
@@ -25,8 +22,6 @@ _CRITERIA = {
         "Differences in wording are fine; missing or contradicting facts are not."
     ),
 }
-
-_JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
 
 
 class JudgeError(RuntimeError):
@@ -59,11 +54,8 @@ class LLMJudge:
 
 
 def parse_score(raw: str) -> float:
-    match = _JSON_OBJECT.search(raw)
-    if not match:
-        raise JudgeError(f"No JSON in judge output: {raw!r}")
     try:
-        score = int(json.loads(match.group())["score"])
+        score = int(extract_json_object(raw)["score"])
     except (ValueError, KeyError, TypeError) as exc:
         raise JudgeError(f"Malformed judge output: {raw!r}") from exc
     if not 1 <= score <= 5:

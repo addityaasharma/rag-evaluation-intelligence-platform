@@ -1,6 +1,13 @@
 # ragkit
 
-A modular retrieval-augmented generation (RAG) toolkit with a built-in evaluation harness. Hybrid retrieval (dense + BM25), grounded and cited answers, any LLM provider via LiteLLM, and CI-gateable quality scores.
+A modular retrieval-augmented generation (RAG) toolkit with a built-in evaluation harness.
+
+- **Documents:** PDF, DOCX, TXT and Markdown, via CLI, API or the web app.
+- **Chat:** multi-turn Q&A with hybrid retrieval (dense + BM25), and any LLM provider via LiteLLM.
+- **Citations:** each answer cites `[n]` passages, shown with file and page number.
+- **Hallucination check:** claim-level verification flags statements the context does not support.
+- **Evaluation:** faithfulness, relevancy, precision and recall, with CI gates.
+- **Comparison and history:** sweep chunk sizes, embedding models and retrieval modes; every run is stored so versions can be compared over time.
 
 ## Quick start
 
@@ -13,6 +20,15 @@ uv run rag ingest data/sample_docs --reset
 uv run rag ask "How long are backups retained?"
 ```
 
+## Web app
+
+```bash
+uv sync --all-extras
+uv run rag ui
+```
+
+Pages: **Chat** (with a hallucination-check toggle), **Documents** (upload, list, delete) and **Evaluation** (metric dashboard, per-question results, run history, configuration comparison).
+
 ## Evaluate
 
 ```bash
@@ -21,12 +37,15 @@ uv run rag eval --min-score faithfulness=0.8 --min-score hit_rate=0.8
 
 Prints a metric table, writes `eval/reports/latest.json` with per-question results, and exits non-zero if a gate fails. See [docs/architecture.md](docs/architecture.md) for the metric definitions.
 
-Compare retrieval strategies on the same dataset:
+Every run is saved to `.rag/history.db`. List runs with `uv run rag history`; use `--label` to name a pipeline version and `--no-record` to skip saving.
+
+Compare chunk sizes, embedding models and retrieval modes in one table. This scores retrieval only, so it needs no API key; add `--with-judges` to also score answers:
 
 ```bash
-RAG_RETRIEVAL_MODE=dense  uv run rag eval
-RAG_RETRIEVAL_MODE=bm25   uv run rag eval
-RAG_RETRIEVAL_MODE=hybrid uv run rag eval
+uv run rag compare data/sample_docs \
+  --chunk-size 400,800 \
+  --embedding-model BAAI/bge-small-en-v1.5,sentence-transformers/all-MiniLM-L6-v2 \
+  --retrieval-mode dense,bm25,hybrid
 ```
 
 To evaluate your own corpus, ingest it and write a JSONL file of `{"question", "reference_answer", "relevant_sources"}` lines, then pass `--dataset`.
@@ -35,8 +54,9 @@ To evaluate your own corpus, ingest it and write a JSONL file of `{"question", "
 
 ```bash
 uv run rag serve
+curl -s -F file=@report.pdf localhost:8000/documents
 curl -s localhost:8000/ask -H 'content-type: application/json' \
-  -d '{"question": "Which plans support SAML SSO?"}'
+  -d '{"question": "Which plans support SAML SSO?", "verify": true}'
 ```
 
 ## Use as a library
@@ -57,7 +77,8 @@ All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/c
 ## Development
 
 ```bash
-make check   # ruff, mypy, pytest
+make install   # uv sync --all-extras
+make check     # ruff, mypy, pytest
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under MIT.

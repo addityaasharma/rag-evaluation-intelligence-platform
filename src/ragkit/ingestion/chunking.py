@@ -6,32 +6,41 @@ from ragkit.models import Chunk, Document
 def chunk_document(document: Document, size: int, overlap: int) -> list[Chunk]:
     """Split a document into paragraph-aligned chunks of at most `size` characters.
 
-    Consecutive chunks share roughly `overlap` trailing characters (snapped to a
-    word boundary) so that facts straddling a boundary remain retrievable.
+    Pages are chunked independently so every chunk maps to exactly one page.
+    Consecutive chunks within a page share roughly `overlap` trailing characters
+    (snapped to a word boundary) so facts straddling a boundary stay retrievable.
     """
     if overlap >= size:
         raise ValueError("overlap must be smaller than size")
 
-    texts: list[str] = []
+    chunks: list[Chunk] = []
+    for page in document.pages:
+        for text in _split(page.text, size, overlap):
+            index = len(chunks)
+            chunks.append(
+                Chunk(
+                    id=f"{document.id}:{index}",
+                    document_id=document.id,
+                    source=document.source,
+                    index=index,
+                    text=text,
+                    page=page.number,
+                )
+            )
+    return chunks
+
+
+def _split(text: str, size: int, overlap: int) -> list[str]:
+    pieces: list[str] = []
     current = ""
-    for unit in _units(document.text, size):
+    for unit in _units(text, size):
         if current and len(current) + len(unit) + 2 > size:
-            texts.append(current)
+            pieces.append(current)
             current = _tail(current, overlap)
         current = f"{current}\n\n{unit}" if current else unit
-    if current and (not texts or current != _tail(texts[-1], overlap)):
-        texts.append(current)
-
-    return [
-        Chunk(
-            id=f"{document.id}:{i}",
-            document_id=document.id,
-            source=document.source,
-            index=i,
-            text=text,
-        )
-        for i, text in enumerate(texts)
-    ]
+    if current and (not pieces or current != _tail(pieces[-1], overlap)):
+        pieces.append(current)
+    return pieces
 
 
 def _units(text: str, size: int) -> Iterator[str]:

@@ -1,4 +1,6 @@
-from typing import Protocol
+import json
+import re
+from typing import Any, Protocol
 
 import litellm
 
@@ -38,3 +40,17 @@ class LiteLLMClient:
             num_retries=self._retries,
         )
         return (response.choices[0].message.content or "").strip()
+
+
+_JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
+
+
+def extract_json_object(raw: str) -> dict[str, Any]:
+    """Parse the first JSON object in model output, tolerating prose or code fences."""
+    match = _JSON_OBJECT.search(raw)
+    if not match:
+        raise ValueError(f"No JSON object in model output: {raw!r}")
+    data = json.loads(match.group())
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected a JSON object, got {type(data).__name__}")
+    return data

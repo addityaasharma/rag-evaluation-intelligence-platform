@@ -31,6 +31,7 @@ class Retriever:
         self._bm25: BM25Okapi | None = None
         self._bm25_chunks: list[Chunk] = []
         self._bm25_tokens: list[set[str]] = []
+        self._bm25_key: tuple[int, int] | None = None
 
     def retrieve(self, query: str, k: int) -> list[RetrievedChunk]:
         pool = max(self._pool, k)
@@ -58,8 +59,10 @@ class Retriever:
         ]
 
     def _index(self) -> BM25Okapi | None:
-        # Rebuilt only when the store size changes, e.g. after a new ingest.
-        if len(self._bm25_chunks) != self._store.count():
+        # Revision catches in-process writes; count catches writes by other processes.
+        key = (self._store.revision, self._store.count())
+        if key != self._bm25_key:
+            self._bm25_key = key
             self._bm25_chunks = self._store.all_chunks()
             tokenized = [_tokenize(c.text) for c in self._bm25_chunks]
             self._bm25_tokens = [set(t) for t in tokenized]

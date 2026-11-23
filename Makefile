@@ -1,7 +1,7 @@
 .PHONY: install lint format typecheck test check ingest eval serve
 
 install:
-	uv sync
+	uv sync --all-extras
 
 lint:
 	uv run ruff check . && uv run ruff format --check .

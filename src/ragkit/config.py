@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     chroma_path: Path = Path(".rag/chroma")
     collection: str = "documents"
+    history_path: Path = Path(".rag/history.db")
 
     chunk_size: int = Field(800, gt=0)
     chunk_overlap: int = Field(100, ge=0)

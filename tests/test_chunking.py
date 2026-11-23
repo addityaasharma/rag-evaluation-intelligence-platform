@@ -1,11 +1,11 @@
 import pytest
 
 from ragkit.ingestion.chunking import chunk_document
-from ragkit.models import Document
+from ragkit.models import Document, Page
 
 
 def doc(text: str) -> Document:
-    return Document(id="doc", source="doc.md", text=text)
+    return Document(id="doc", source="doc.md", pages=[Page(text=text)])
 
 
 def test_short_document_is_single_chunk():
@@ -43,3 +43,17 @@ def test_no_content_is_lost():
 def test_invalid_overlap_rejected():
     with pytest.raises(ValueError):
         chunk_document(doc("text"), size=10, overlap=10)
+
+
+def test_chunks_keep_their_page_and_never_span_pages():
+    document = Document(
+        id="doc",
+        source="doc.pdf",
+        pages=[Page(number=1, text="first page text"), Page(number=2, text="second page text")],
+    )
+    chunks = chunk_document(document, size=500, overlap=50)
+    assert [(c.page, c.text) for c in chunks] == [
+        (1, "first page text"),
+        (2, "second page text"),
+    ]
+    assert [c.id for c in chunks] == ["doc:0", "doc:1"]
