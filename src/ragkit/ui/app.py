@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 import pandas as pd
 import streamlit as st
@@ -26,9 +27,29 @@ HEADLINE_METRICS = {
 }
 
 
+SAMPLE_DOCS = Path("data/sample_docs")
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
 @st.cache_resource
-def pipeline() -> RagPipeline:
+def _shared_pipeline() -> RagPipeline:
     return build_pipeline()
+
+
+@st.cache_resource(max_entries=20, ttl=3600)
+def _demo_pipeline(session_id: str) -> RagPipeline:
+    settings = get_settings()
+    demo = Settings(**{**settings.model_dump(), "collection": f"demo-{session_id}"})
+    instance = build_pipeline(demo)
+    instance.ingest(SAMPLE_DOCS, reset=True)
+    return instance
+
+
+def pipeline() -> RagPipeline:
+    """The shared index, or in public demo mode a private one per browser session."""
+    if not get_settings().public_demo:
+        return _shared_pipeline()
+    return _demo_pipeline(st.session_state.setdefault("session_id", uuid4().hex[:10]))
 
 
 @st.cache_resource
@@ -43,6 +64,9 @@ def documents_page() -> None:
     )
     if uploads and st.button("Index uploads", type="primary"):
         for upload in uploads:
+            if get_settings().public_demo and upload.size > MAX_UPLOAD_BYTES:
+                st.error(f"{upload.name}: demo uploads are limited to 5 MB")
+                continue
             try:
                 with st.spinner(f"Indexing {upload.name}"):
                     stats = pipeline().ingest_upload(upload.name, upload.getvalue())
@@ -95,9 +119,15 @@ def chat_page() -> None:
         with st.chat_message(message.role):
             render_answer(answer) if answer else st.markdown(message.content)
 
+    settings = get_settings()
+    asked = st.session_state.get("asked", 0)
+    if settings.public_demo and asked >= settings.demo_question_limit:
+        st.info("Demo question limit reached for this session. Run it locally for unlimited use.")
+        return
     question = st.chat_input("Ask about your documents")
     if not question:
         return
+    st.session_state["asked"] = asked + 1
     with st.chat_message("user"):
         st.markdown(question)
     with st.chat_message("assistant"):
@@ -135,12 +165,18 @@ def evaluation_page() -> None:
         _compare(settings)
 
 
+def _eval_used_up(settings: Settings) -> bool:
+    # Each evaluation costs dozens of LLM calls, so the public demo allows one per session.
+    return settings.public_demo and st.session_state.get("evals", 0) >= 1
+
+
 def _dashboard(settings: Settings) -> None:
     label = st.text_input("Run label", value="ui")
-    if st.button("Run evaluation on golden dataset"):
+    if st.button("Run evaluation on golden dataset", disabled=_eval_used_up(settings)):
+        st.session_state["evals"] = st.session_state.get("evals", 0) + 1
         with st.spinner("Evaluating (makes LLM calls)"):
             judge = LLMJudge(LiteLLMClient(settings.judge_model, max_tokens=256))
-            report = run_evaluation(pipeline(), load_dataset(DATASET), judge)
+            report = run_evaluation(pipeline(), load_dataset(DATASET), judge, workers=2)
             history().record(label, config_snapshot(settings, DATASET.name), report)
 
     runs = history().runs()

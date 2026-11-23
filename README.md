@@ -15,7 +15,7 @@ Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-cp .env.example .env            # add your provider API key
+cp .env.example .env            # add a free Gemini key: https://aistudio.google.com/apikey
 uv run rag ingest data/sample_docs --reset
 uv run rag ask "How long are backups retained?"
 ```
@@ -70,9 +70,21 @@ pipeline.ingest(Path("data/sample_docs"))
 print(pipeline.ask("What is the Pro plan rate limit?").text)
 ```
 
+## Deploy to Hugging Face Spaces
+
+The app runs as a Docker Space (free tier). Each visitor gets a private index with the sample documents loaded; uploads are capped at 5 MB, chat at 30 questions and evaluation at one run per session, because all visitors share one API key.
+
+1. Create a free Gemini API key at https://aistudio.google.com/apikey.
+2. On huggingface.co, create a **Docker** Space (blank template, public).
+3. In the Space settings, add a secret `GEMINI_API_KEY`.
+4. In this GitHub repo, add a secret `HF_TOKEN` (a Hugging Face token with write access) and a variable `HF_SPACE` (`your-username/space-name`).
+5. Run the **Deploy to Hugging Face Space** workflow. It also runs on every push to `main`.
+
+Free Spaces sleep when idle and lose uploaded data on restart. Set `RAG_PUBLIC_DEMO=0` to turn off the demo limits on a private deployment.
+
 ## Configuration
 
-All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=openai/gpt-4o`.
+All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=groq/openai/gpt-oss-20b` with `GROQ_API_KEY`. The default is Gemini 2.5 Flash-Lite on Google's free tier, which is rate limited; evaluation runs may take a few minutes.
 
 ## Development
 

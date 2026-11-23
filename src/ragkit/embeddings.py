@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Protocol
 
 
@@ -27,3 +28,9 @@ class FastEmbedder:
 
             self._model = TextEmbedding(model_name=self._model_name)
         return self._model
+
+
+@lru_cache
+def shared_embedder(model_name: str) -> FastEmbedder:
+    """One loaded model per process, reused by every pipeline built from the same name."""
+    return FastEmbedder(model_name)

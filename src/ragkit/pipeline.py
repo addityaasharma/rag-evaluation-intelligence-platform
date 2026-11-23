@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ragkit.config import Settings, get_settings
-from ragkit.embeddings import FastEmbedder
+from ragkit.embeddings import shared_embedder
 from ragkit.generation import condense_question, generate_answer
 from ragkit.ingestion import chunk_document, load_documents
 from ragkit.llm import LLM, LiteLLMClient
@@ -99,7 +99,7 @@ class RagPipeline:
 def build_pipeline(settings: Settings | None = None) -> RagPipeline:
     settings = settings or get_settings()
     store = ChromaStore(
-        FastEmbedder(settings.embedding_model),
+        shared_embedder(settings.embedding_model),
         collection=settings.collection,
         path=settings.chroma_path,
     )
