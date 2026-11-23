@@ -1,6 +1,6 @@
 name: Eval
 
-# Calls a paid LLM API, so it is manual rather than per-commit.
+# Calls a rate-limited LLM API, so it is manual rather than per-commit.
 on:
   workflow_dispatch:
 
@@ -14,7 +14,7 @@ jobs:
       - run: make ingest
       - run: make eval
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

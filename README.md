@@ -15,7 +15,7 @@ Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-cp .env.example .env            # add your provider API key
+cp .env.example .env            # add a free Gemini key: https://aistudio.google.com/apikey
 uv run rag ingest data/sample_docs --reset
 uv run rag ask "How long are backups retained?"
 ```
@@ -70,9 +70,33 @@ pipeline.ingest(Path("data/sample_docs"))
 print(pipeline.ask("What is the Pro plan rate limit?").text)
 ```
 
+## Deploy
+
+### Streamlit Community Cloud (free)
+
+1. Create a free Gemini API key at https://aistudio.google.com/apikey.
+2. At https://share.streamlit.io choose **Create app**, pick this repository, branch `main`, and main file `streamlit_app.py`.
+3. Under **Advanced settings**, select Python 3.12 and paste these secrets:
+   ```toml
+   GEMINI_API_KEY = "your-key"
+   RAG_PUBLIC_DEMO = "1"
+   RAG_CHROMA_PATH = "/tmp/chroma"
+   RAG_HISTORY_PATH = "/tmp/history.db"
+   ```
+4. Deploy. The app redeploys on every push to `main`.
+
+`RAG_PUBLIC_DEMO=1` gives each visitor a private index preloaded with the sample documents, caps uploads at 5 MB, chat at 30 questions and evaluation at one run per session, since all visitors share one API key. Free apps sleep when idle and lose uploaded data on restart.
+
+### Docker
+
+```bash
+docker build -t rag-platform .
+docker run -p 8501:8501 -e GEMINI_API_KEY=your-key rag-platform
+```
+
 ## Configuration
 
-All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=openai/gpt-4o`.
+All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=groq/openai/gpt-oss-20b` with `GROQ_API_KEY`. The default is Gemini Flash-Lite (the `latest` alias, so it survives model retirements) on Google's free tier, which is rate limited; evaluation runs may take a few minutes.
 
 ## Development
 

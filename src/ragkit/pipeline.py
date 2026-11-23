@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ragkit.config import Settings, get_settings
-from ragkit.embeddings import FastEmbedder
+from ragkit.embeddings import shared_embedder
 from ragkit.generation import condense_question, generate_answer
 from ragkit.ingestion import chunk_document, load_documents
 from ragkit.llm import LLM, LiteLLMClient
@@ -99,7 +99,7 @@ class RagPipeline:
 def build_pipeline(settings: Settings | None = None) -> RagPipeline:
     settings = settings or get_settings()
     store = ChromaStore(
-        FastEmbedder(settings.embedding_model),
+        shared_embedder(settings.embedding_model),
         collection=settings.collection,
         path=settings.chroma_path,
     )
@@ -109,5 +109,9 @@ def build_pipeline(settings: Settings | None = None) -> RagPipeline:
         candidate_pool=settings.candidate_pool,
         rrf_k=settings.rrf_k,
     )
-    verifier = HallucinationDetector(LiteLLMClient(settings.judge_model, max_tokens=1024))
-    return RagPipeline(settings, store, retriever, LiteLLMClient(settings.llm_model), verifier)
+    rpm = settings.requests_per_minute
+    verifier = HallucinationDetector(
+        LiteLLMClient(settings.judge_model, max_tokens=1024, requests_per_minute=rpm)
+    )
+    llm = LiteLLMClient(settings.llm_model, requests_per_minute=rpm)
+    return RagPipeline(settings, store, retriever, llm, verifier)
