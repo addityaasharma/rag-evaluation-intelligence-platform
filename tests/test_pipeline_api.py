@@ -112,3 +112,15 @@ def test_api_document_endpoints(store):
     assert client.post("/documents", files={"file": ("bad.pdf", b"nope")}).status_code == 422
     assert client.delete("/documents", params={"source": "a.pdf"}).status_code == 204
     assert client.get("/documents").json() == []
+
+
+def test_rate_limiter_spaces_calls():
+    import time
+
+    from ragkit.llm import RateLimiter
+
+    limiter = RateLimiter(requests_per_minute=1200)  # 50 ms apart
+    start = time.monotonic()
+    for _ in range(4):
+        limiter.wait()
+    assert time.monotonic() - start >= 0.14

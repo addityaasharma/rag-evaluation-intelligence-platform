@@ -74,7 +74,11 @@ def evaluate(
     logging.basicConfig(level=logging.WARNING)
 
     settings = get_settings()
-    judge = LLMJudge(LiteLLMClient(settings.judge_model, max_tokens=256))
+    judge = LLMJudge(
+        LiteLLMClient(
+            settings.judge_model, max_tokens=256, requests_per_minute=settings.requests_per_minute
+        )
+    )
     report = run_evaluation(build_pipeline(settings), load_dataset(dataset), judge, workers=workers)
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -131,7 +135,17 @@ def compare(
         embedding_models=[v for v in embedding_model.split(",") if v] or [settings.embedding_model],
         retrieval_modes=[v.strip() for v in retrieval_mode.split(",")],  # type: ignore[misc]
     )
-    judge = LLMJudge(LiteLLMClient(settings.judge_model, max_tokens=256)) if with_judges else None
+    judge = (
+        LLMJudge(
+            LiteLLMClient(
+                settings.judge_model,
+                max_tokens=256,
+                requests_per_minute=settings.requests_per_minute,
+            )
+        )
+        if with_judges
+        else None
+    )
     results = run_sweep(
         settings,
         docs,

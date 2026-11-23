@@ -84,7 +84,7 @@ Free Spaces sleep when idle and lose uploaded data on restart. Set `RAG_PUBLIC_D
 
 ## Configuration
 
-All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=groq/openai/gpt-oss-20b` with `GROQ_API_KEY`. The default is Gemini 2.5 Flash-Lite on Google's free tier, which is rate limited; evaluation runs may take a few minutes.
+All settings are `RAG_*` environment variables; see `.env.example` and `ragkit/config.py`. Models are LiteLLM strings, so switching provider is a config change, e.g. `RAG_LLM_MODEL=groq/openai/gpt-oss-20b` with `GROQ_API_KEY`. The default is Gemini Flash-Lite (the `latest` alias, so it survives model retirements) on Google's free tier, which is rate limited; evaluation runs may take a few minutes.
 
 ## Development
 

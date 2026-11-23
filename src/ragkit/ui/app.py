@@ -175,7 +175,13 @@ def _dashboard(settings: Settings) -> None:
     if st.button("Run evaluation on golden dataset", disabled=_eval_used_up(settings)):
         st.session_state["evals"] = st.session_state.get("evals", 0) + 1
         with st.spinner("Evaluating (makes LLM calls)"):
-            judge = LLMJudge(LiteLLMClient(settings.judge_model, max_tokens=256))
+            judge = LLMJudge(
+                LiteLLMClient(
+                    settings.judge_model,
+                    max_tokens=256,
+                    requests_per_minute=settings.requests_per_minute,
+                )
+            )
             report = run_evaluation(pipeline(), load_dataset(DATASET), judge, workers=2)
             history().record(label, config_snapshot(settings, DATASET.name), report)
 
@@ -235,7 +241,17 @@ def _compare(settings: Settings) -> None:
         embedding_models=[m.strip() for m in models.split(",") if m.strip()],
         retrieval_modes=modes,  # type: ignore[arg-type]
     )
-    judge = LLMJudge(LiteLLMClient(settings.judge_model, max_tokens=256)) if with_judges else None
+    judge = (
+        LLMJudge(
+            LiteLLMClient(
+                settings.judge_model,
+                max_tokens=256,
+                requests_per_minute=settings.requests_per_minute,
+            )
+        )
+        if with_judges
+        else None
+    )
     with st.spinner("Running sweep"):
         results = run_sweep(
             settings, Path(docs), load_dataset(DATASET), grid, judge=judge, history=history()

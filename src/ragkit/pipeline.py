@@ -109,5 +109,9 @@ def build_pipeline(settings: Settings | None = None) -> RagPipeline:
         candidate_pool=settings.candidate_pool,
         rrf_k=settings.rrf_k,
     )
-    verifier = HallucinationDetector(LiteLLMClient(settings.judge_model, max_tokens=1024))
-    return RagPipeline(settings, store, retriever, LiteLLMClient(settings.llm_model), verifier)
+    rpm = settings.requests_per_minute
+    verifier = HallucinationDetector(
+        LiteLLMClient(settings.judge_model, max_tokens=1024, requests_per_minute=rpm)
+    )
+    llm = LiteLLMClient(settings.llm_model, requests_per_minute=rpm)
+    return RagPipeline(settings, store, retriever, llm, verifier)

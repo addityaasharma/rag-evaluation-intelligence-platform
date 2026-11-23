@@ -15,9 +15,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="RAG_", env_file=".env", extra="ignore")
 
     # Any LiteLLM model string. The default runs on Google AI Studio's free tier.
-    llm_model: str = "gemini/gemini-2.5-flash-lite"
-    judge_model: str = "gemini/gemini-2.5-flash-lite"
+    llm_model: str = "gemini/gemini-flash-lite-latest"
+    judge_model: str = "gemini/gemini-flash-lite-latest"
     embedding_model: str = "BAAI/bge-small-en-v1.5"
+
+    # Free-tier Gemini allows 15 requests/minute per model; stay just under it.
+    requests_per_minute: int = Field(12, gt=0)
 
     chroma_path: Path = Path(".rag/chroma")
     collection: str = "documents"
